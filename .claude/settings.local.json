@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/lukaf/Desktop/Dev Work/trinity-method/Projects/trinity-dashboard/Work Orders/**)",
+      "Read(//c/Users/lukaf/Desktop/Dev Work/trinity-method/**)",
+      "Bash(npm create:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
