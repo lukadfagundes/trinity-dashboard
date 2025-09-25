@@ -1,150 +1,211 @@
-import { useState, useEffect } from 'react'
+import { useGitHub } from '../contexts/GitHubContext'
 import DashboardLayout from '../components/Layout/DashboardLayout'
-import HealthCard from '../components/Cards/HealthCard'
-import TestResultsCard from '../components/Cards/TestResultsCard'
-import CoverageCard from '../components/Cards/CoverageCard'
-import SecurityCard from '../components/Cards/SecurityCard'
-import CoverageTrend from '../components/Charts/CoverageTrend'
-import TestResults from '../components/Charts/TestResults'
-import SecurityChart from '../components/Charts/SecurityChart'
-import { fetchRunsData, calculateAggregateMetrics } from '../utils/dataFetcher'
+import LoadingSpinner from '../components/LoadingSpinner'
+import ErrorDisplay from '../components/ErrorDisplay'
+import RateLimitIndicator from '../components/RateLimitIndicator'
+import ProjectSection from '../components/ProjectSection'
 
 const Dashboard = () => {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { data, loading, error, lastUpdate, refresh, refreshing } = useGitHub();
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const runsData = await fetchRunsData()
-        setData(runsData)
-        setLoading(false)
-      } catch (err) {
-        setError(err.message)
-        setLoading(false)
-      }
-    }
-    loadData()
-
-    const interval = setInterval(loadData, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-trinity-green mx-auto"></div>
-            <p className="text-gray-400 mt-4">Loading dashboard data...</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    )
+  if (loading && !refreshing) {
+    return <LoadingSpinner />;
   }
 
-  if (error) {
-    return (
-      <DashboardLayout>
-        <div className="bg-red-900/20 border border-red-900/50 rounded-lg p-6">
-          <p className="text-red-400">Error loading dashboard: {error}</p>
-        </div>
-      </DashboardLayout>
-    )
+  if (error && (!data || data.length === 0)) {
+    return <ErrorDisplay error={error} onRetry={refresh} />;
   }
-
-  const aggregateMetrics = calculateAggregateMetrics(data?.runs || [])
-  const latestRun = data?.runs?.[0]
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-          <h2 className="text-2xl font-bold text-white mb-2">Trinity DevOps Dashboard</h2>
-          <p className="text-gray-400">
-            Real-time monitoring and analytics for Trinity Method projects
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <HealthCard
-            project={data?.project}
-            metrics={latestRun?.metrics}
-          />
-          <TestResultsCard metrics={latestRun?.metrics} />
-          <CoverageCard
-            metrics={latestRun?.metrics}
-            history={data?.runs || []}
-          />
-          <SecurityCard metrics={latestRun?.metrics} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CoverageTrend runs={data?.runs || []} />
-          <TestResults runs={data?.runs?.slice(0, 5) || []} />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <SecurityChart metrics={latestRun?.metrics} />
-          </div>
-
-          <div className="lg:col-span-2">
-            <div className="metric-card">
-              <h3 className="text-lg font-semibold text-white mb-4">Recent Runs</h3>
-              <div className="space-y-2">
-                {data?.runs?.slice(0, 5).map((run) => (
-                  <div
-                    key={run.id}
-                    className="flex items-center justify-between p-3 bg-gray-900/50 rounded hover:bg-gray-900/70 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-2 h-2 rounded-full ${
-                        run.status === 'success' ? 'bg-green-500' : 'bg-red-500'
-                      }`} />
-                      <div>
-                        <p className="text-white text-sm font-medium">{run.id}</p>
-                        <p className="text-gray-400 text-xs">{run.branch} • {run.commit.slice(0, 7)}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-gray-300 text-sm">
-                        {run.metrics?.coverage?.overall.toFixed(1)}% coverage
-                      </p>
-                      <p className="text-gray-500 text-xs">
-                        {new Date(run.timestamp).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {data?.projects?.map((project) => (
-            <div key={project.name} className="metric-card">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-white font-medium">{project.name}</h4>
-                <span className={`text-xs px-2 py-1 rounded ${
-                  project.status === 'active'
-                    ? 'bg-green-900/50 text-green-400'
-                    : 'bg-gray-900/50 text-gray-400'
-                }`}>
-                  {project.status}
-                </span>
-              </div>
-              <p className="text-gray-400 text-sm">
-                {project.lastRun ? `Last run: ${project.lastRun}` : 'No runs yet'}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Trinity DevOps Dashboard</h2>
+              <p className="text-gray-400">
+                Real-time monitoring and analytics for Trinity Method projects
               </p>
             </div>
-          ))}
+
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={refresh}
+                disabled={refreshing}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  refreshing
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-trinity-blue text-white hover:bg-blue-600'
+                }`}
+              >
+                {refreshing ? (
+                  <span className="flex items-center space-x-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span>Refreshing...</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Refresh</span>
+                  </span>
+                )}
+              </button>
+
+              {lastUpdate && (
+                <div className="text-sm text-gray-400">
+                  <span>Last updated: </span>
+                  <span className="font-medium">
+                    {new Date(lastUpdate).toLocaleTimeString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {error && data && data.length > 0 && (
+          <div className="bg-yellow-900/20 border border-yellow-900/50 rounded-lg p-4">
+            <p className="text-yellow-400">
+              <span className="font-medium">Warning:</span> {error}
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            {data && data.length > 0 ? (
+              <div className="space-y-6">
+                {data.map((repoData) => (
+                  <ProjectSection key={repoData.repo} data={repoData} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gray-900 rounded-lg p-12 border border-gray-800 text-center">
+                <div className="text-6xl mb-4">📊</div>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  No Data Available
+                </h3>
+                <p className="text-gray-400 mb-4">
+                  Configure your GitHub token and repositories to start monitoring
+                </p>
+                <a
+                  href="https://github.com/settings/tokens/new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-trinity-blue text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Get GitHub Token
+                </a>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-1 space-y-4">
+            <RateLimitIndicator />
+
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+              <h3 className="text-lg font-semibold text-white mb-3">Quick Stats</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Repositories</span>
+                  <span className="text-white font-medium">{data?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Total Runs</span>
+                  <span className="text-white font-medium">
+                    {data?.reduce((sum, repo) => sum + (repo.runs?.length || 0), 0) || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Healthy Projects</span>
+                  <span className="text-green-400 font-medium">
+                    {data?.filter(repo => repo.health?.level === 'healthy').length || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Warnings</span>
+                  <span className="text-yellow-400 font-medium">
+                    {data?.filter(repo => repo.health?.level === 'warning').length || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Critical</span>
+                  <span className="text-red-400 font-medium">
+                    {data?.filter(repo => repo.health?.level === 'critical').length || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+              <h3 className="text-lg font-semibold text-white mb-3">Configuration</h3>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className="text-gray-400">Owner: </span>
+                  <span className="text-white">
+                    {import.meta.env.VITE_GITHUB_OWNER || 'Not configured'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Repositories: </span>
+                  <div className="mt-1">
+                    {import.meta.env.VITE_GITHUB_REPOS ? (
+                      import.meta.env.VITE_GITHUB_REPOS.split(',').map(repo => (
+                        <span
+                          key={repo}
+                          className="inline-block px-2 py-1 mr-1 mb-1 bg-gray-800 text-white text-xs rounded"
+                        >
+                          {repo.trim()}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-gray-500">Not configured</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+              <h3 className="text-lg font-semibold text-white mb-3">Resources</h3>
+              <div className="space-y-2">
+                <a
+                  href="https://docs.github.com/en/rest"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-trinity-blue hover:text-trinity-green transition-colors"
+                >
+                  GitHub API Documentation →
+                </a>
+                <a
+                  href="https://github.com/settings/tokens"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-trinity-blue hover:text-trinity-green transition-colors"
+                >
+                  Manage GitHub Tokens →
+                </a>
+                <a
+                  href="https://github.com/trinity-method/trinity-dashboard"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-trinity-blue hover:text-trinity-green transition-colors"
+                >
+                  Dashboard Repository →
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </DashboardLayout>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
