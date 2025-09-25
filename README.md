@@ -2,6 +2,12 @@
 
 **Real-time DevOps monitoring and analytics dashboard for Trinity Method projects**
 
+![Build Status](https://github.com/trinity-method/trinity-dashboard/actions/workflows/ci.yml/badge.svg)
+![CodeQL](https://github.com/trinity-method/trinity-dashboard/actions/workflows/codeql.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/Coverage-0%25-red)
+![Security](https://img.shields.io/badge/Security-Scanning-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 ![Trinity Dashboard](https://img.shields.io/badge/Status-Active-green) ![React](https://img.shields.io/badge/React-18.3-blue) ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-teal) ![Chart.js](https://img.shields.io/badge/Chart.js-4.4-orange)
 
 ## Overview

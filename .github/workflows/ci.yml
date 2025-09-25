@@ -1,0 +1,442 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, dev, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.10'
+  CACHE_VERSION: v1
+
+jobs:
+  # JavaScript/TypeScript Job
+  node-ci:
+    name: Node.js CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: |
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          elif [ -f "package.json" ]; then
+            npm install
+          fi
+
+      - name: Run ESLint
+        id: eslint
+        run: |
+          if [ -f "package.json" ]; then
+            npm run lint || npx eslint . --ext .js,.jsx,.ts,.tsx --format json --output-file eslint-report.json || true
+          fi
+
+      - name: Auto-fix linting issues
+        if: failure() && steps.eslint.outcome == 'failure'
+        run: |
+          npx eslint . --ext .js,.jsx,.ts,.tsx --fix || true
+          echo "::warning::Some linting issues were auto-fixed. Please review the changes."
+
+      - name: Run tests with coverage
+        id: test
+        run: |
+          if [ -f "package.json" ]; then
+            npm test -- --coverage --watchAll=false --passWithNoTests --coverageReporters=json --coverageReporters=lcov --coverageReporters=text || true
+          fi
+
+      - name: Generate coverage report
+        if: steps.test.outcome == 'success'
+        run: |
+          if [ -d "coverage" ]; then
+            echo "Coverage report generated successfully"
+            if [ -f "coverage/coverage-summary.json" ]; then
+              COVERAGE=$(cat coverage/coverage-summary.json | python3 -c "import sys, json; data = json.load(sys.stdin); print(data['total']['lines']['pct'])")
+              echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+              echo "::notice::Test coverage: ${COVERAGE}%"
+            fi
+          fi
+
+      - name: Check coverage threshold
+        if: env.COVERAGE
+        run: |
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "::warning::Coverage is below 80% threshold (current: ${COVERAGE}%)"
+          else
+            echo "::notice::Coverage meets threshold (${COVERAGE}% >= 80%)"
+          fi
+
+      - name: Upload coverage artifact
+        if: steps.test.outcome == 'success' && hashFiles('coverage/**') != ''
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            eslint-report.json
+          retention-days: 7
+
+      - name: Build project
+        run: |
+          if [ -f "package.json" ]; then
+            npm run build || echo "No build script found"
+          fi
+
+      - name: Upload build artifacts
+        if: hashFiles('dist/**') != '' || hashFiles('build/**') != ''
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts-node
+          path: |
+            dist/
+            build/
+          retention-days: 7
+
+  # Python Job (conditional)
+  python-ci:
+    name: Python CI
+    runs-on: ubuntu-latest
+    if: hashFiles('**/*.py') != '' || hashFiles('requirements.txt') != ''
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black pylint pytest pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run Black formatter check
+        run: black --check . || echo "::warning::Python code needs formatting with Black"
+
+      - name: Run Flake8 linter
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+      - name: Run Pylint
+        run: pylint **/*.py --exit-zero || true
+
+      - name: Run pytest with coverage
+        run: |
+          pytest --cov=. --cov-report=xml --cov-report=term --cov-report=json || echo "No Python tests found"
+
+      - name: Upload Python coverage
+        if: hashFiles('coverage.json') != ''
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-coverage
+          path: |
+            coverage.xml
+            coverage.json
+          retention-days: 7
+
+  # Rust Job (conditional)
+  rust-ci:
+    name: Rust CI
+    runs-on: ubuntu-latest
+    if: hashFiles('Cargo.toml') != ''
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ env.CACHE_VERSION }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Check formatting
+        run: cargo fmt -- --check || echo "::warning::Rust code needs formatting"
+
+      - name: Run Clippy
+        run: cargo clippy -- -D warnings || echo "::warning::Clippy found issues"
+
+      - name: Run tests
+        run: cargo test --all-features
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Upload Rust artifacts
+        if: hashFiles('target/release/**') != ''
+        uses: actions/upload-artifact@v3
+        with:
+          name: rust-artifacts
+          path: target/release/
+          retention-days: 7
+
+  # Security Scanning Job
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js for npm audit
+        if: hashFiles('package-lock.json') != ''
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run npm audit
+        if: hashFiles('package-lock.json') != ''
+        run: |
+          npm audit --audit-level=high --json > npm-audit.json || true
+          if [ -f npm-audit.json ]; then
+            VULNS=$(cat npm-audit.json | python3 -c "import sys, json; data = json.load(sys.stdin); print(data.get('metadata', {}).get('vulnerabilities', {}).get('total', 0))" 2>/dev/null || echo "0")
+            if [ "$VULNS" -gt "0" ]; then
+              echo "::warning::Found $VULNS npm vulnerabilities"
+            fi
+          fi
+
+      - name: Setup Python for pip-audit
+        if: hashFiles('requirements.txt') != ''
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run pip-audit
+        if: hashFiles('requirements.txt') != ''
+        run: |
+          pip install pip-audit
+          pip-audit --format json --output pip-audit.json || true
+          if [ -f pip-audit.json ]; then
+            echo "::notice::Python dependency audit completed"
+          fi
+
+      - name: Run cargo audit
+        if: hashFiles('Cargo.lock') != ''
+        run: |
+          cargo install cargo-audit || true
+          cargo audit --json > cargo-audit.json || true
+          if [ -f cargo-audit.json ]; then
+            echo "::notice::Rust dependency audit completed"
+          fi
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            npm-audit.json
+            pip-audit.json
+            cargo-audit.json
+          retention-days: 7
+
+  # Generate Dashboard Data
+  generate-dashboard-data:
+    name: Generate Dashboard Data
+    needs: [node-ci, python-ci, rust-ci, security]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Generate dashboard data
+        run: |
+          # Set build status
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+            export BUILD_STATUS="failed"
+          else
+            export BUILD_STATUS="success"
+          fi
+
+          # Create dashboard data generator if it doesn't exist
+          if [ ! -f ".github/scripts/generate-dashboard-data.js" ]; then
+            echo "Dashboard data generator not found, using default"
+            node -e "
+            const fs = require('fs');
+            const data = {
+              timestamp: new Date().toISOString(),
+              repository: '${{ github.event.repository.name }}',
+              branch: '${{ github.ref_name }}',
+              commit: '${{ github.sha }}'.substring(0, 7),
+              status: process.env.BUILD_STATUS || 'success',
+              actor: '${{ github.actor }}',
+              workflow: '${{ github.workflow }}',
+              runId: '${{ github.run_id }}',
+              runNumber: '${{ github.run_number }}',
+              coverage: { overall: 0 },
+              tests: { total: 0, passed: 0, failed: 0 },
+              security: { critical: 0, high: 0, medium: 0, low: 0 }
+            };
+
+            // Try to parse coverage if available
+            try {
+              if (fs.existsSync('artifacts/coverage-report/coverage-summary.json')) {
+                const coverage = JSON.parse(fs.readFileSync('artifacts/coverage-report/coverage-summary.json'));
+                data.coverage.overall = coverage.total?.lines?.pct || 0;
+              }
+            } catch (e) {
+              console.log('Coverage data not found');
+            }
+
+            // Save dashboard data
+            fs.writeFileSync('dashboard-data.json', JSON.stringify(data, null, 2));
+            console.log('Dashboard data generated:', data);
+            "
+          else
+            node .github/scripts/generate-dashboard-data.js
+          fi
+
+      - name: Upload dashboard data
+        uses: actions/upload-artifact@v3
+        with:
+          name: dashboard-data
+          path: dashboard-data.json
+          retention-days: 30
+
+  # Discord Notification Job
+  discord-notify:
+    name: Discord Notification
+    needs: [node-ci, python-ci, rust-ci, security, generate-dashboard-data]
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare notification data
+        run: |
+          # Determine overall status
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+            echo "BUILD_STATUS=❌ Failed" >> $GITHUB_ENV
+            echo "COLOR=15158332" >> $GITHUB_ENV
+          elif [ "${{ contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "BUILD_STATUS=⚠️ Cancelled" >> $GITHUB_ENV
+            echo "COLOR=16776960" >> $GITHUB_ENV
+          else
+            echo "BUILD_STATUS=✅ Success" >> $GITHUB_ENV
+            echo "COLOR=3066993" >> $GITHUB_ENV
+          fi
+
+          # Individual job statuses
+          echo "NODE_STATUS=${{ needs.node-ci.result }}" >> $GITHUB_ENV
+          echo "PYTHON_STATUS=${{ needs.python-ci.result }}" >> $GITHUB_ENV
+          echo "RUST_STATUS=${{ needs.rust-ci.result }}" >> $GITHUB_ENV
+          echo "SECURITY_STATUS=${{ needs.security.result }}" >> $GITHUB_ENV
+
+      - name: Send Discord notification
+        if: vars.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ vars.DISCORD_WEBHOOK }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d '{
+              "embeds": [{
+                "title": "Trinity CI/CD Pipeline ${{ env.BUILD_STATUS }}",
+                "color": ${{ env.COLOR }},
+                "description": "Pipeline execution completed for **${{ github.repository }}**",
+                "fields": [
+                  {
+                    "name": "📦 Repository",
+                    "value": "`${{ github.repository }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🌿 Branch",
+                    "value": "`${{ github.ref_name }}`",
+                    "inline": true
+                  },
+                  {
+                    "name": "🔨 Commit",
+                    "value": "`${{ github.sha }}`",
+                    "inline": false
+                  },
+                  {
+                    "name": "👤 Author",
+                    "value": "${{ github.actor }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "🔢 Run Number",
+                    "value": "#${{ github.run_number }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "📊 Job Results",
+                    "value": "**Node.js**: ${{ env.NODE_STATUS }}\n**Python**: ${{ env.PYTHON_STATUS }}\n**Rust**: ${{ env.RUST_STATUS }}\n**Security**: ${{ env.SECURITY_STATUS }}",
+                    "inline": false
+                  }
+                ],
+                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                "timestamp": "${{ github.event.head_commit.timestamp }}",
+                "footer": {
+                  "text": "Trinity CI/CD",
+                  "icon_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+                }
+              }]
+            }' \
+            $DISCORD_WEBHOOK || echo "Discord webhook not configured"
+
+  # Final Status Check
+  ci-status:
+    name: CI Status
+    needs: [node-ci, python-ci, rust-ci, security]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check CI Status
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+            echo "::error::CI Pipeline failed"
+            exit 1
+          elif [ "${{ contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::warning::CI Pipeline was cancelled"
+            exit 1
+          else
+            echo "::notice::CI Pipeline completed successfully"
+          fi

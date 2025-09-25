@@ -1,0 +1,120 @@
+repos:
+  # General purpose hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
+
+  # Python specific hooks
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: \.py$
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        args: ['--max-line-length=88', '--extend-ignore=E203']
+        files: \.py$
+
+  # JavaScript/TypeScript hooks
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.42.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.42.0
+          - eslint-config-standard@17.1.0
+          - eslint-plugin-import@2.27.5
+          - eslint-plugin-n@16.0.0
+          - eslint-plugin-promise@6.1.1
+          - eslint-plugin-react@7.32.2
+          - eslint-plugin-react-hooks@4.6.0
+          - '@typescript-eslint/eslint-plugin@5.59.9'
+          - '@typescript-eslint/parser@5.59.9'
+
+  # Prettier for formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0
+    hooks:
+      - id: prettier
+        files: \.(js|jsx|ts|tsx|json|css|md|yml|yaml)$
+        exclude: '^(package-lock\.json|yarn\.lock)$'
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.35.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix']
+
+  # Local repository hooks
+  - repo: local
+    hooks:
+      # Rust formatting (if Rust is present)
+      - id: rust-fmt
+        name: Rust Format
+        entry: bash -c 'if command -v cargo &> /dev/null && [ -f Cargo.toml ]; then cargo fmt --; fi'
+        language: system
+        files: \.rs$
+        pass_filenames: false
+
+      # Rust clippy (if Rust is present)
+      - id: rust-clippy
+        name: Rust Clippy
+        entry: bash -c 'if command -v cargo &> /dev/null && [ -f Cargo.toml ]; then cargo clippy -- -D warnings; fi'
+        language: system
+        files: \.rs$
+        pass_filenames: false
+
+      # Dart format (if Dart is present)
+      - id: dart-format
+        name: Dart Format
+        entry: bash -c 'if command -v dart &> /dev/null && find . -name "*.dart" -print -quit | grep -q .; then dart format .; fi'
+        language: system
+        files: \.dart$
+        pass_filenames: false
+
+      # NPM audit check
+      - id: npm-audit
+        name: NPM Audit
+        entry: bash -c 'if [ -f package-lock.json ]; then npm audit --audit-level=high || true; fi'
+        language: system
+        pass_filenames: false
+        stages: [commit]
+
+      # Check for console.log statements
+      - id: no-console-log
+        name: Check for console.log
+        entry: bash -c 'if grep -r "console\.log" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build .; then echo "Warning: console.log found in code"; fi'
+        language: system
+        pass_filenames: false
+
+      # Check for TODO comments
+      - id: todo-check
+        name: Check for TODOs
+        entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --include="*.py" --exclude-dir=node_modules --exclude-dir=.git .; then echo "Info: TODO/FIXME comments found"; fi'
+        language: system
+        pass_filenames: false
+
+# Configuration for specific file types
+default_stages: [commit, push]
+fail_fast: false
+verbose: true

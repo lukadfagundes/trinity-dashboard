@@ -6,7 +6,7 @@ const BASE_URL = import.meta.env.DEV
 
 export const fetchRunsData = async () => {
   try {
-    const response = await axios.get(`${BASE_URL}/sample-runs.json`)
+    const response = await axios.get(`$(import.meta.env.BASE_URL)data/sample-runs.json`)
     return response.data
   } catch (error) {
     console.error('Error fetching runs data:', error)
