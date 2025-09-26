@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const ThemeContext = createContext();
 
@@ -20,18 +20,24 @@ export function ThemeProvider({ children }) {
     }
   }, [darkMode]);
 
-  const toggleDarkMode = () => {
+  const toggleDarkMode = useCallback(() => {
     setDarkMode(prev => !prev);
-  };
+  }, []);
 
   useEffect(() => {
     const handleToggleEvent = () => toggleDarkMode();
     window.addEventListener('toggle-dark-mode', handleToggleEvent);
     return () => window.removeEventListener('toggle-dark-mode', handleToggleEvent);
-  }, []);
+  }, [toggleDarkMode]);
+
+  const value = useMemo(() => ({
+    darkMode,
+    setDarkMode,
+    toggleDarkMode
+  }), [darkMode, toggleDarkMode]);
 
   return (
-    <ThemeContext.Provider value={{ darkMode, setDarkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

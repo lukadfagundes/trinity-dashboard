@@ -4,19 +4,24 @@ import Dashboard from './pages/Dashboard'
 import ProjectDashboard from './pages/ProjectDashboard'
 import RunDetails from './pages/RunDetails'
 import PRDashboard from './pages/PRDashboard'
+import PerformanceDashboard from './components/PerformanceDashboard'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
   return (
-    <GitHubProvider>
-      <Router basename="/trinity-dashboard">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/project/:projectName" element={<ProjectDashboard />} />
-          <Route path="/runs/:runId" element={<RunDetails />} />
-          <Route path="/pr/:prNumber" element={<PRDashboard />} />
-        </Routes>
-      </Router>
-    </GitHubProvider>
+    <ErrorBoundary>
+      <GitHubProvider>
+        <Router basename="/trinity-dashboard">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/project/:projectName" element={<ProjectDashboard />} />
+            <Route path="/runs/:runId" element={<RunDetails />} />
+            <Route path="/pr/:prNumber" element={<PRDashboard />} />
+            <Route path="/performance" element={<PerformanceDashboard />} />
+          </Routes>
+        </Router>
+      </GitHubProvider>
+    </ErrorBoundary>
   )
 }
 

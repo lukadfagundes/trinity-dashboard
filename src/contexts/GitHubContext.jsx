@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchAllRepoData } from '../services/dataCollector';
 import { transformRepoData } from '../services/dataTransformer';
 import cacheManager from '../services/cacheManager';
@@ -49,7 +49,6 @@ export function GitHubProvider({ children }) {
       setData(transformedData);
       setLastUpdate(new Date());
       setError(null);
-      ');
     } catch (err) {
       console.error('[GitHub Context] Failed to load sample data:', err);
       setError('Failed to load sample data');
@@ -197,7 +196,15 @@ export function GitHubProvider({ children }) {
     };
   }, []);
 
-  const value = {
+  const clearError = useCallback(() => setError(null), []);
+
+  const getCacheStats = useCallback(() => cacheManager.getCacheStats(), []);
+
+  const clearCache = useCallback(() => {
+    cacheManager.clear();
+  }, []);
+
+  const value = useMemo(() => ({
     data,
     loading,
     error,
@@ -206,13 +213,22 @@ export function GitHubProvider({ children }) {
     isAuthenticated,
     rateLimitInfo,
     refreshing,
-    clearError: () => setError(null),
-    getCacheStats: () => cacheManager.getCacheStats(),
-    clearCache: () => {
-      cacheManager.clear();
-      
-    }
-  };
+    clearError,
+    getCacheStats,
+    clearCache
+  }), [
+    data,
+    loading,
+    error,
+    lastUpdate,
+    refresh,
+    isAuthenticated,
+    rateLimitInfo,
+    refreshing,
+    clearError,
+    getCacheStats,
+    clearCache
+  ]);
 
   return (
     <GitHubContext.Provider value={value}>

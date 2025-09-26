@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const PreferencesContext = createContext();
 
@@ -43,28 +43,28 @@ export function PreferencesProvider({ children }) {
     }
   }, [preferences]);
 
-  const updatePreference = (key, value) => {
+  const updatePreference = useCallback((key, value) => {
     setPreferences(prev => {
       const updated = { ...prev, [key]: value };
       setHasChanges(true);
       return updated;
     });
-  };
+  }, []);
 
-  const updateMultiplePreferences = (updates) => {
+  const updateMultiplePreferences = useCallback((updates) => {
     setPreferences(prev => {
       const updated = { ...prev, ...updates };
       setHasChanges(true);
       return updated;
     });
-  };
+  }, []);
 
-  const resetPreferences = () => {
+  const resetPreferences = useCallback(() => {
     setPreferences(defaultPreferences);
     setHasChanges(true);
-  };
+  }, []);
 
-  const exportPreferences = () => {
+  const exportPreferences = useCallback(() => {
     const dataStr = JSON.stringify(preferences, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -75,9 +75,9 @@ export function PreferencesProvider({ children }) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  };
+  }, [preferences]);
 
-  const importPreferences = (file) => {
+  const importPreferences = useCallback((file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -94,17 +94,17 @@ export function PreferencesProvider({ children }) {
       reader.onerror = reject;
       reader.readAsText(file);
     });
-  };
+  }, []);
 
-  const getPreference = (key) => {
+  const getPreference = useCallback((key) => {
     return preferences[key] ?? defaultPreferences[key];
-  };
+  }, [preferences]);
 
-  const isDefault = (key) => {
+  const isDefault = useCallback((key) => {
     return preferences[key] === defaultPreferences[key];
-  };
+  }, [preferences]);
 
-  const getChangedPreferences = () => {
+  const getChangedPreferences = useCallback(() => {
     const changed = {};
     Object.keys(preferences).forEach(key => {
       if (preferences[key] !== defaultPreferences[key]) {
@@ -112,7 +112,7 @@ export function PreferencesProvider({ children }) {
       }
     });
     return changed;
-  };
+  }, [preferences]);
 
   useEffect(() => {
     if (preferences.colorBlindMode) {
@@ -126,9 +126,9 @@ export function PreferencesProvider({ children }) {
     const handleExportEvent = () => exportPreferences();
     window.addEventListener('export-preferences', handleExportEvent);
     return () => window.removeEventListener('export-preferences', handleExportEvent);
-  }, [preferences]);
+  }, [exportPreferences]);
 
-  const contextValue = {
+  const contextValue = useMemo(() => ({
     preferences,
     updatePreference,
     updateMultiplePreferences,
@@ -140,7 +140,18 @@ export function PreferencesProvider({ children }) {
     getChangedPreferences,
     hasChanges,
     defaultPreferences
-  };
+  }), [
+    preferences,
+    updatePreference,
+    updateMultiplePreferences,
+    resetPreferences,
+    exportPreferences,
+    importPreferences,
+    getPreference,
+    isDefault,
+    getChangedPreferences,
+    hasChanges
+  ]);
 
   return (
     <PreferencesContext.Provider value={contextValue}>

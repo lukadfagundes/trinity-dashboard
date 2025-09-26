@@ -1,15 +1,14 @@
 /**
  * GitHub Live Data Service
- * Fetches and manages real-time GitHub data using webhooks and polling
+ * Fetches and manages real-time GitHub data using polling
+ * WebSocket support removed - using smart polling instead
  */
-
-import { getWebSocketService } from './websocketService';
 
 export class GitHubLiveDataService {
   constructor(token = null) {
     this.token = token || import.meta.env.VITE_GITHUB_TOKEN;
     this.baseUrl = 'https://api.github.com';
-    this.wsService = getWebSocketService();
+    // WebSocket service removed - using polling instead
     this.pollingIntervals = new Map();
     this.cache = new Map();
     this.subscribers = new Map();
@@ -18,18 +17,12 @@ export class GitHubLiveDataService {
   // Initialize live data connections
   async initialize(repositories = []) {
     try {
-      // Connect to WebSocket service
-      await this.wsService.connect();
-
-      // Set up WebSocket event listeners
-      this.setupWebSocketListeners();
-
       // Subscribe to repositories
       for (const repo of repositories) {
         await this.subscribeToRepository(repo);
       }
 
-      // Start polling for data that doesn't come through webhooks
+      // Start polling for data
       this.startPolling(repositories);
 
       return true;
@@ -39,33 +32,10 @@ export class GitHubLiveDataService {
     }
   }
 
-  setupWebSocketListeners() {
-    // Listen for GitHub push events
-    this.wsService.on('github:push', (data) => {
-      this.handlePushEvent(data);
-    });
-
-    // Listen for workflow run updates
-    this.wsService.on('workflow:run', (data) => {
-      this.handleWorkflowUpdate(data);
-    });
-
-    // Listen for PR updates
-    this.wsService.on('pr:update', (data) => {
-      this.handlePRUpdate(data);
-    });
-
-    // Listen for metrics updates
-    this.wsService.on('metrics:update', (data) => {
-      this.handleMetricsUpdate(data);
-    });
-  }
+  // WebSocket listeners removed - using polling instead
 
   async subscribeToRepository(repo) {
     const [owner, name] = repo.split('/');
-
-    // Subscribe via WebSocket
-    this.wsService.subscribe(repo, ['push', 'workflow_run', 'pull_request', 'check_suite']);
 
     // Set up webhook if not already configured
     await this.ensureWebhook(owner, name);
@@ -244,7 +214,7 @@ export class GitHubLiveDataService {
     return response.json();
   }
 
-  startPolling(repositories, interval = 60000) {
+  startPolling(repositories, interval = 5000) { // Changed to 5 second intervals
     for (const repo of repositories) {
       const [owner, name] = repo.split('/');
 
@@ -277,7 +247,7 @@ export class GitHubLiveDataService {
     }
   }
 
-  // Event handlers for WebSocket updates
+  // Event handlers for webhook/polling updates
   handlePushEvent(data) {
     
     const { repository } = data;
@@ -362,7 +332,7 @@ export class GitHubLiveDataService {
   // Cleanup
   disconnect() {
     this.stopPolling();
-    this.wsService.disconnect();
+    // WebSocket disconnect removed
     this.cache.clear();
     this.subscribers.clear();
   }

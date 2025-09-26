@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { measureApiCall } from '../utils/performanceMetrics';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 const TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
@@ -20,7 +21,7 @@ const api = axios.create({
 api.interceptors.request.use(
   config => {
     if (DEBUG_MODE) {
-      } ${config.url}`);
+      console.log(`[GitHub API] Request: ${config.url}`);
     }
     return config;
   },
@@ -42,7 +43,7 @@ api.interceptors.response.use(
       localStorage.setItem('github_rate_reset', reset);
 
       if (DEBUG_MODE) {
-        .toLocaleTimeString()})`);
+        console.log(`[GitHub API] Response received at ${new Date().toLocaleTimeString()}`);
       }
 
       if (parseInt(remaining) < 10) {
@@ -73,18 +74,18 @@ api.interceptors.response.use(
   }
 );
 
-export const checkAuthentication = async () => {
+export const checkAuthentication = measureApiCall('/user', 'GET', async () => {
   try {
     const response = await api.get('/user');
-    
+
     return response.data;
   } catch (error) {
     console.error('[GitHub API] Authentication check failed');
     return null;
   }
-};
+});
 
-export const getRateLimit = async () => {
+export const getRateLimit = measureApiCall('/rate_limit', 'GET', async () => {
   try {
     const response = await api.get('/rate_limit');
     return response.data;
@@ -92,6 +93,6 @@ export const getRateLimit = async () => {
     console.error('[GitHub API] Failed to get rate limit');
     return null;
   }
-};
+});
 
 export default api;

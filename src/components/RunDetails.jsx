@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { HistoryService } from '../services/historyService';
 
 // Modal component for overlay
-function Modal({ children, onClose }) {
+const Modal = memo(function Modal({ children, onClose }) {
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-auto">
@@ -19,10 +19,10 @@ function Modal({ children, onClose }) {
       </div>
     </div>
   );
-}
+});
 
 // Coverage breakdown component
-function CoverageBreakdown({ data }) {
+const CoverageBreakdown = memo(function CoverageBreakdown({ data }) {
   if (!data) return <div className="text-gray-500">No coverage data available</div>;
 
   return (
@@ -53,10 +53,10 @@ function CoverageBreakdown({ data }) {
       </div>
     </div>
   );
-}
+});
 
 // File list component
-function FileList({ files }) {
+const FileList = memo(function FileList({ files }) {
   if (!files || files.length === 0) {
     return <div className="text-gray-500">No file-level coverage data</div>;
   }
@@ -89,7 +89,7 @@ function FileList({ files }) {
       ))}
     </div>
   );
-}
+});
 
 // Test suite results component
 function TestSuiteResults({ suites }) {
@@ -194,7 +194,7 @@ function VulnerabilityList({ vulnerabilities, summary }) {
 }
 
 // Main RunDetails component
-export function RunDetails({ runId, onClose }) {
+export const RunDetails = memo(function RunDetails({ runId, onClose }) {
   const [run, setRun] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -388,4 +388,4 @@ export function RunDetails({ runId, onClose }) {
       </div>
     </Modal>
   );
-}
+});
