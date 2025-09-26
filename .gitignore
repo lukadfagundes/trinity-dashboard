@@ -45,7 +45,5 @@ pnpm-lock.yaml
 # Trinity Method deployment
 trinity-deploy-source/
 .claude/
-
-# Include Trinity Method behavioral files
-!trinity/CLAUDE.md
-!trinity/knowledge-base/ISSUES.md
+/trinity/
+CLAUDE.md

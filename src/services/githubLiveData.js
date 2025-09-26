@@ -117,7 +117,7 @@ export class GitHubLiveDataService {
       });
 
       if (response.ok) {
-        console.log(`Webhook created for ${owner}/${repo}`);
+        
       }
     } catch (error) {
       console.error('Failed to create webhook:', error);
@@ -279,7 +279,7 @@ export class GitHubLiveDataService {
 
   // Event handlers for WebSocket updates
   handlePushEvent(data) {
-    console.log('Push event received:', data);
+    
     const { repository } = data;
 
     // Trigger data refresh for affected repository
@@ -288,7 +288,7 @@ export class GitHubLiveDataService {
   }
 
   handleWorkflowUpdate(data) {
-    console.log('Workflow update received:', data);
+    
     const { repository, runId, status, conclusion } = data;
 
     // Update cache with new workflow status
@@ -304,7 +304,7 @@ export class GitHubLiveDataService {
   }
 
   handlePRUpdate(data) {
-    console.log('PR update received:', data);
+    
     const { repository, number } = data;
 
     // Refresh PR data
@@ -313,7 +313,7 @@ export class GitHubLiveDataService {
   }
 
   handleMetricsUpdate(data) {
-    console.log('Metrics update received:', data);
+    
     const { repository, metrics } = data;
 
     // Update cache with new metrics

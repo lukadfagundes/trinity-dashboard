@@ -30,7 +30,10 @@
       "Bash([ -f \"trinity/knowledge-base/To-do.md\" ])",
       "Bash([ -f \"trinity/knowledge-base/ISSUES.md\" ])",
       "Bash([ -f \"CLAUDE.md\" ])",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

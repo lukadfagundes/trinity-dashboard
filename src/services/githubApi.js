@@ -6,7 +6,7 @@ const OWNER = import.meta.env.VITE_GITHUB_OWNER;
 const DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 if (DEBUG_MODE) {
-  console.log('GitHub API initialized for owner:', OWNER);
+  
 }
 
 const api = axios.create({
@@ -20,7 +20,7 @@ const api = axios.create({
 api.interceptors.request.use(
   config => {
     if (DEBUG_MODE) {
-      console.log(`[GitHub API] ${config.method?.toUpperCase()} ${config.url}`);
+      } ${config.url}`);
     }
     return config;
   },
@@ -42,7 +42,7 @@ api.interceptors.response.use(
       localStorage.setItem('github_rate_reset', reset);
 
       if (DEBUG_MODE) {
-        console.log(`[GitHub API] Rate limit: ${remaining}/${limit} (resets: ${new Date(reset * 1000).toLocaleTimeString()})`);
+        .toLocaleTimeString()})`);
       }
 
       if (parseInt(remaining) < 10) {
@@ -76,7 +76,7 @@ api.interceptors.response.use(
 export const checkAuthentication = async () => {
   try {
     const response = await api.get('/user');
-    console.log('[GitHub API] Authenticated as:', response.data.login);
+    
     return response.data;
   } catch (error) {
     console.error('[GitHub API] Authentication check failed');

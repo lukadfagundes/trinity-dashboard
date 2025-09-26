@@ -143,7 +143,7 @@ class CacheManager {
     });
 
     if (cleaned > 0) {
-      console.log(`[Cache] Cleaned ${cleaned} expired entries`);
+      
     }
   }
 

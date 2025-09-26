@@ -49,7 +49,7 @@ export function GitHubProvider({ children }) {
       setData(transformedData);
       setLastUpdate(new Date());
       setError(null);
-      console.log('[GitHub Context] Using sample data (no token provided)');
+      ');
     } catch (err) {
       console.error('[GitHub Context] Failed to load sample data:', err);
       setError('Failed to load sample data');
@@ -75,7 +75,7 @@ export function GitHubProvider({ children }) {
       if (!forceRefresh && !cacheManager.isRateLimited()) {
         const cachedData = cacheManager.get(cacheKey);
         if (cachedData) {
-          console.log('[GitHub Context] Using cached data');
+          
           setData(cachedData);
           setLastUpdate(new Date());
           setLoading(false);
@@ -109,7 +109,7 @@ export function GitHubProvider({ children }) {
         return;
       }
 
-      console.log('[GitHub Context] Fetching data for repositories:', repos);
+      
       const rawData = await fetchAllRepoData(repos);
 
       const transformedData = rawData.map(repoData => {
@@ -135,7 +135,7 @@ export function GitHubProvider({ children }) {
       const rateInfo = cacheManager.getRateLimitInfo();
       setRateLimitInfo(rateInfo);
 
-      console.log('[GitHub Context] Data fetched successfully');
+      
     } catch (err) {
       console.error('[GitHub Context] Failed to fetch data:', err);
       setError(err.message || 'Failed to fetch data from GitHub');
@@ -143,7 +143,7 @@ export function GitHubProvider({ children }) {
       const cacheKey = 'dashboard_data_all';
       const fallbackData = cacheManager.get(cacheKey);
       if (fallbackData) {
-        console.log('[GitHub Context] Using fallback cached data');
+        
         setData(fallbackData);
         setError(error => `${error} - Using cached data`);
       }
@@ -154,7 +154,7 @@ export function GitHubProvider({ children }) {
   }, [loadSampleData]);
 
   const refresh = useCallback(() => {
-    console.log('[GitHub Context] Manual refresh triggered');
+    
     return fetchData(true);
   }, [fetchData]);
 
@@ -210,7 +210,7 @@ export function GitHubProvider({ children }) {
     getCacheStats: () => cacheManager.getCacheStats(),
     clearCache: () => {
       cacheManager.clear();
-      console.log('[GitHub Context] Cache cleared');
+      
     }
   };
 

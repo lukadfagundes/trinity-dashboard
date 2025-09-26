@@ -144,7 +144,7 @@ export async function fetchAllRepoData(repos) {
   for (const repo of repos) {
     try {
       const trimmedRepo = repo.trim();
-      console.log(`Fetching data for ${trimmedRepo}...`);
+      
 
       const [runs, stats] = await Promise.all([
         fetchWorkflowRuns(trimmedRepo),
