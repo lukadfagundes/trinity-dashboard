@@ -395,6 +395,61 @@ function generateDashboardData() {
   return data;
 }
 
+// Historical persistence functions
+function loadHistoricalData() {
+  const historyPath = 'dashboard-history.json';
+  try {
+    if (fs.existsSync(historyPath)) {
+      return JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+    }
+  } catch (error) {
+    console.log('Could not load historical data:', error.message);
+  }
+  return [];
+}
+
+function saveHistoricalData(currentData) {
+  const historyPath = 'dashboard-history.json';
+  const maxEntriesPerBranch = 1000; // Keep last 1000 entries per branch
+
+  try {
+    // Load existing history
+    let history = loadHistoricalData();
+
+    // Add current data to history
+    history.unshift(currentData);
+
+    // Group by branch and limit entries
+    const branches = {};
+    history.forEach(entry => {
+      const branch = entry.branch || 'unknown';
+      if (!branches[branch]) {
+        branches[branch] = [];
+      }
+      branches[branch].push(entry);
+    });
+
+    // Limit entries per branch
+    history = [];
+    Object.keys(branches).forEach(branch => {
+      const branchHistory = branches[branch].slice(0, maxEntriesPerBranch);
+      history = history.concat(branchHistory);
+    });
+
+    // Sort by timestamp (newest first)
+    history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Save updated history
+    fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+
+    console.log(`Historical data saved: ${history.length} total entries`);
+    return history;
+  } catch (error) {
+    console.error('Error saving historical data:', error.message);
+    return [];
+  }
+}
+
 // Main execution
 try {
   console.log('Trinity Dashboard Data Generator');
@@ -409,6 +464,9 @@ try {
   // Save to file
   const outputPath = 'dashboard-data.json';
   fs.writeFileSync(outputPath, JSON.stringify(data, null, 2));
+
+  // Save historical data
+  const history = saveHistoricalData(data);
 
   console.log('Dashboard data generated successfully!');
   console.log('');

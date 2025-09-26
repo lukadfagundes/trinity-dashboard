@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react'
 import { useGitHub } from '../contexts/GitHubContext'
 import DashboardLayout from '../components/Layout/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -7,6 +8,35 @@ import ProjectSection from '../components/ProjectSection'
 
 const Dashboard = () => {
   const { data, loading, error, lastUpdate, refresh, refreshing } = useGitHub();
+  const [selectedBranch, setSelectedBranch] = useState('all');
+
+  // Extract unique branches from all repositories
+  const availableBranches = useMemo(() => {
+    if (!data || data.length === 0) return [];
+
+    const branches = new Set(['all']);
+    data.forEach(repo => {
+      if (repo.runs && Array.isArray(repo.runs)) {
+        repo.runs.forEach(run => {
+          if (run.head_branch) {
+            branches.add(run.head_branch);
+          }
+        });
+      }
+    });
+
+    return Array.from(branches);
+  }, [data]);
+
+  // Filter data by selected branch
+  const filteredData = useMemo(() => {
+    if (!data || selectedBranch === 'all') return data;
+
+    return data.map(repo => ({
+      ...repo,
+      runs: repo.runs?.filter(run => run.head_branch === selectedBranch) || []
+    })).filter(repo => repo.runs && repo.runs.length > 0);
+  }, [data, selectedBranch]);
 
   if (loading && !refreshing) {
     return <LoadingSpinner />;
@@ -29,6 +59,20 @@ const Dashboard = () => {
             </div>
 
             <div className="flex items-center space-x-4">
+              {availableBranches.length > 1 && (
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 focus:border-trinity-blue focus:outline-none"
+                >
+                  {availableBranches.map(branch => (
+                    <option key={branch} value={branch}>
+                      {branch === 'all' ? 'All Branches' : branch}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               <button
                 onClick={refresh}
                 disabled={refreshing}
@@ -79,9 +123,9 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {data && data.length > 0 ? (
+            {filteredData && filteredData.length > 0 ? (
               <div className="space-y-6">
-                {data.map((repoData) => (
+                {filteredData.map((repoData) => (
                   <ProjectSection key={repoData.repo} data={repoData} />
                 ))}
               </div>
