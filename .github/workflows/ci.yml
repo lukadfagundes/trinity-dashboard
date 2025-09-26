@@ -114,12 +114,8 @@ jobs:
   python-ci:
     name: Python CI
     runs-on: ubuntu-latest
-<<<<<<< HEAD
-    if: ${{ hashFiles('**/*.py') != '' || hashFiles('requirements.txt') != '' }}
-=======
     # Python job will run always but skip steps if no Python files
     if: always()
->>>>>>> dev
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -172,12 +168,8 @@ jobs:
   rust-ci:
     name: Rust CI
     runs-on: ubuntu-latest
-<<<<<<< HEAD
-    if: ${{ hashFiles('Cargo.toml') != '' }}
-=======
     # Rust job will run always but skip steps if no Cargo.toml
     if: always()
->>>>>>> dev
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

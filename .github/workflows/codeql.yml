@@ -135,12 +135,8 @@ jobs:
   owasp-check:
     name: OWASP Dependency Check
     runs-on: ubuntu-latest
-<<<<<<< HEAD
-    if: ${{ hashFiles('package-lock.json') != '' }}
-=======
     # Job will run but skip steps if no package-lock.json
     if: always()
->>>>>>> dev
 
     steps:
       - name: Checkout code
