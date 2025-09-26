@@ -45,5 +45,5 @@ pnpm-lock.yaml
 # Trinity Method deployment
 trinity-deploy-source/
 .claude/
-/trinity/
+trinity/
 CLAUDE.md
