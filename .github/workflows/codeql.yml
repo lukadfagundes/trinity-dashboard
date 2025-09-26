@@ -135,13 +135,29 @@ jobs:
   owasp-check:
     name: OWASP Dependency Check
     runs-on: ubuntu-latest
+<<<<<<< HEAD
     if: ${{ hashFiles('package-lock.json') != '' }}
+=======
+    # Job will run but skip steps if no package-lock.json
+    if: always()
+>>>>>>> dev
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Check for package-lock.json
+        id: check_npm
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "npm_lock_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "npm_lock_exists=false" >> $GITHUB_OUTPUT
+            echo "Skipping OWASP check - no package-lock.json found"
+          fi
+
       - name: Run OWASP Dependency Check
+        if: steps.check_npm.outputs.npm_lock_exists == 'true'
         uses: dependency-check/Dependency-Check_Action@main
         with:
           project: 'trinity-dashboard'
@@ -152,7 +168,7 @@ jobs:
             --enableExperimental
 
       - name: Upload OWASP results
-        if: always()
+        if: always() && steps.check_npm.outputs.npm_lock_exists == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: owasp-dependency-check-results
