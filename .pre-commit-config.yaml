@@ -103,14 +103,14 @@ repos:
       # Check for console.log statements
       - id: no-console-log
         name: Check for console.log
-        entry: bash -c 'if grep -r "console\.log" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build .; then echo "Warning: console.log found in code"; fi'
+        entry: "bash -c 'if grep -r \"console\\.log\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.ts\" --include=\"*.tsx\" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build .; then echo \"Warning: console.log found in code\"; fi'"
         language: system
         pass_filenames: false
 
       # Check for TODO comments
       - id: todo-check
         name: Check for TODOs
-        entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --include="*.py" --exclude-dir=node_modules --exclude-dir=.git .; then echo "Info: TODO/FIXME comments found"; fi'
+        entry: "bash -c 'if grep -r \"TODO\\|FIXME\\|XXX\" --include=\"*.js\" --include=\"*.jsx\" --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.py\" --exclude-dir=node_modules --exclude-dir=.git .; then echo \"Info: TODO/FIXME comments found\"; fi'"
         language: system
         pass_filenames: false
 

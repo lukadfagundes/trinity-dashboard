@@ -42,5 +42,10 @@ coverage/
 yarn.lock
 pnpm-lock.yaml
 
-#Claude AI
+# Trinity Method deployment
+trinity-deploy-source/
 .claude/
+
+# Include Trinity Method behavioral files
+!trinity/CLAUDE.md
+!trinity/knowledge-base/ISSUES.md
