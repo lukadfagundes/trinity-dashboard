@@ -114,7 +114,8 @@ jobs:
   python-ci:
     name: Python CI
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/*.py') != '' || hashFiles('requirements.txt') != '' }}
+    # Python job will run always but skip steps if no Python files
+    if: always()
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -134,6 +135,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
+        if: steps.check_python.outputs.python_exists == 'true'
         run: |
           python -m pip install --upgrade pip
           pip install flake8 black pylint pytest pytest-cov
@@ -166,17 +168,29 @@ jobs:
   rust-ci:
     name: Rust CI
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('Cargo.toml') != '' }}
+    # Rust job will run always but skip steps if no Cargo.toml
+    if: always()
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Check for Rust project
+        id: check_rust
+        run: |
+          if [ -f "Cargo.toml" ]; then
+            echo "rust_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "rust_exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Rust
+        if: steps.check_rust.outputs.rust_exists == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
 
       - name: Cache cargo registry
+        if: steps.check_rust.outputs.rust_exists == 'true'
         uses: actions/cache@v3
         with:
           path: |
@@ -189,15 +203,19 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Check formatting
+        if: steps.check_rust.outputs.rust_exists == 'true'
         run: cargo fmt -- --check || echo "::warning::Rust code needs formatting"
 
       - name: Run Clippy
+        if: steps.check_rust.outputs.rust_exists == 'true'
         run: cargo clippy -- -D warnings || echo "::warning::Clippy found issues"
 
       - name: Run tests
+        if: steps.check_rust.outputs.rust_exists == 'true'
         run: cargo test --all-features
 
       - name: Build release
+        if: steps.check_rust.outputs.rust_exists == 'true'
         run: cargo build --release
 
       - name: Upload Rust artifacts
