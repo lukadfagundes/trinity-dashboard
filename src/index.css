@@ -42,4 +42,24 @@ body {
   .metric-card {
     @apply bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors;
   }
+
+  .empty-state-container {
+    @apply py-8 text-center text-gray-400;
+  }
+
+  .empty-icon {
+    @apply text-4xl mb-4 opacity-50;
+  }
+
+  .empty-state-action {
+    @apply inline-block mt-4 px-4 py-2 border border-gray-700 rounded transition-all;
+  }
+
+  .empty-state-action:hover {
+    @apply bg-trinity-blue text-white border-trinity-blue;
+  }
+
+  .no-data-message {
+    @apply py-6 text-center text-gray-400 bg-gray-900/50 rounded-lg;
+  }
 }

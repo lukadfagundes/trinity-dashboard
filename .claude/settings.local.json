@@ -39,7 +39,9 @@
       "Bash(cat:*)",
       "Bash(npm ls:*)",
       "Bash(npm run test:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

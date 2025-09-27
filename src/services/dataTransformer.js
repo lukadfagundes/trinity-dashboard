@@ -118,11 +118,15 @@ function extractCoverageMetrics(artifacts, jobs) {
     coverage.overall = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
   }
 
+  // Return null values when no real data is available
   if (coverage.overall === 0) {
-    coverage.overall = Math.random() * 20 + 75;
-    coverage.python = Math.random() * 20 + 75;
-    coverage.javascript = Math.random() * 20 + 75;
-    coverage.rust = Math.random() * 20 + 75;
+    return {
+      overall: null,
+      python: null,
+      javascript: null,
+      rust: null,
+      dart: null
+    };
   }
 
   return coverage;
@@ -137,18 +141,11 @@ function extractTestMetrics(artifacts, jobs) {
     duration: null
   };
 
+  // Only extract from actual test job outputs if they contain real metrics
+  // Do not infer arbitrary numbers from job names
   jobs.forEach(job => {
-    const name = job.name?.toLowerCase() || '';
-    if (name.includes('test') || name.includes('pytest') || name.includes('jest')) {
-      if (job.conclusion === 'success') {
-        tests.passed += 50;
-        tests.total += 50;
-      } else if (job.conclusion === 'failure') {
-        tests.failed += 5;
-        tests.total += 50;
-        tests.passed += 45;
-      }
-    }
+    // Future: Parse actual test output from job logs
+    // For now, we don't fabricate numbers
   });
 
   artifacts.forEach(artifact => {
@@ -164,10 +161,15 @@ function extractTestMetrics(artifacts, jobs) {
     }
   });
 
+  // Return null values when no real test data is available
   if (tests.total === 0) {
-    tests.total = Math.floor(Math.random() * 100) + 200;
-    tests.passed = tests.total - Math.floor(Math.random() * 5);
-    tests.failed = tests.total - tests.passed;
+    return {
+      total: null,
+      passed: null,
+      failed: null,
+      skipped: null,
+      duration: null
+    };
   }
 
   return tests;
@@ -201,10 +203,12 @@ function extractSecurityMetrics(artifacts, jobs) {
     }
   });
 
-  if (hasSecurityScan && security.critical === 0 && security.high === 0) {
-    security.low = Math.floor(Math.random() * 10) + 1;
-    security.medium = Math.floor(Math.random() * 5);
-    security.high = Math.random() > 0.7 ? 1 : 0;
+  // Return null if no real security data found
+  const hasAnyData = security.critical > 0 || security.high > 0 ||
+                     security.medium > 0 || security.low > 0;
+
+  if (!hasAnyData) {
+    return null; // No security data available
   }
 
   return security;
@@ -274,10 +278,12 @@ function formatBytes(bytes) {
 export function aggregateMetrics(runs) {
   if (!runs || runs.length === 0) {
     return {
-      coverage: { overall: 0, python: 0, javascript: 0, rust: 0 },
-      tests: { total: 0, passed: 0, failed: 0 },
-      security: { critical: 0, high: 0, medium: 0, low: 0 },
-      build: { success: 0, failed: 0, total: 0 }
+      hasWorkflowData: false,
+      coverage: null,
+      tests: null,
+      security: null,
+      build: null,
+      message: "No GitHub Actions workflows found"
     };
   }
 
@@ -310,6 +316,7 @@ export function aggregateMetrics(runs) {
   };
 
   return {
+    hasWorkflowData: true,
     coverage: avgCoverage,
     tests: {
       total: latestRun.metrics?.tests?.total || totalTests,
@@ -354,39 +361,60 @@ export function transformRepoData(repoData) {
 }
 
 function calculateHealthScore(metrics) {
+  // Return null if we don't have sufficient real data
+  if (!metrics || (!metrics.coverage?.overall && !metrics.tests?.total && !metrics.build?.total)) {
+    return null; // Insufficient data to calculate health score
+  }
+
   let score = 0;
   let factors = 0;
 
-  if (metrics.coverage?.overall > 0) {
+  // Only include coverage if we have real data (not null)
+  if (metrics.coverage?.overall != null && metrics.coverage.overall > 0) {
     score += Math.min(metrics.coverage.overall / 100, 1) * 30;
     factors++;
   }
 
-  if (metrics.tests?.total > 0) {
+  // Only include tests if we have real data (not null)
+  if (metrics.tests?.total != null && metrics.tests.total > 0) {
     const passRate = metrics.tests.passed / metrics.tests.total;
     score += passRate * 30;
     factors++;
   }
 
-  const vulnerabilities = (metrics.security?.critical || 0) * 10 +
-                         (metrics.security?.high || 0) * 5 +
-                         (metrics.security?.medium || 0) * 2 +
-                         (metrics.security?.low || 0);
-  const securityScore = Math.max(0, 1 - (vulnerabilities / 50));
-  score += securityScore * 25;
-  factors++;
+  // Only include security if we have real data (not null)
+  if (metrics.security != null) {
+    const vulnerabilities = (metrics.security.critical || 0) * 10 +
+                           (metrics.security.high || 0) * 5 +
+                           (metrics.security.medium || 0) * 2 +
+                           (metrics.security.low || 0);
+    const securityScore = Math.max(0, 1 - (vulnerabilities / 50));
+    score += securityScore * 25;
+    factors++;
+  }
 
+  // Only include build if we have real data
   if (metrics.build?.total > 0) {
     const buildRate = metrics.build.success / metrics.build.total;
     score += buildRate * 15;
     factors++;
   }
 
-  const healthScore = factors > 0 ? score / factors : 0;
+  // Return null if no factors were included (all data was null)
+  if (factors === 0) {
+    return null;
+  }
+
+  const healthScore = score / factors * 100;
+
+  // Use config thresholds instead of hardcoded values
+  // For now using 80/60 but should be from config
+  const highThreshold = 80;
+  const mediumThreshold = 60;
 
   return {
     score: Math.round(healthScore),
-    level: healthScore >= 80 ? 'healthy' : healthScore >= 60 ? 'warning' : 'critical',
-    color: healthScore >= 80 ? 'green' : healthScore >= 60 ? 'yellow' : 'red'
+    level: healthScore >= highThreshold ? 'healthy' : healthScore >= mediumThreshold ? 'warning' : 'critical',
+    color: healthScore >= highThreshold ? 'green' : healthScore >= mediumThreshold ? 'yellow' : 'red'
   };
 }

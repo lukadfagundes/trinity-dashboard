@@ -2,9 +2,26 @@ import { useEffect, useRef } from 'react'
 
 const CoverageCard = ({ metrics, history = [] }) => {
   const canvasRef = useRef(null)
-  const coverage = metrics?.coverage?.overall || 0
+
+  // Check if we have no workflow data
+  if (!metrics?.hasWorkflowData || metrics?.coverage === null) {
+    return (
+      <div className="metric-card">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">Code Coverage</h3>
+        </div>
+        <div className="text-center py-6">
+          <span className="text-3xl mb-2">📊</span>
+          <p className="text-gray-400 mt-2">No coverage data available</p>
+          <small className="text-gray-500 text-xs">Add coverage reporting to your workflows</small>
+        </div>
+      </div>
+    )
+  }
+
+  const coverage = metrics?.coverage?.overall
   const previousCoverage = history.length > 1 ? history[history.length - 2]?.coverage?.overall : coverage
-  const delta = (coverage - previousCoverage).toFixed(1)
+  const delta = coverage != null && previousCoverage != null ? (coverage - previousCoverage).toFixed(1) : null
 
   useEffect(() => {
     if (canvasRef.current && history.length > 0) {
@@ -38,23 +55,29 @@ const CoverageCard = ({ metrics, history = [] }) => {
   }
 
   const languages = [
-    { name: 'Python', coverage: metrics?.coverage?.python || 0, color: 'bg-blue-500' },
-    { name: 'JavaScript', coverage: metrics?.coverage?.javascript || 0, color: 'bg-yellow-500' },
-    { name: 'Rust', coverage: metrics?.coverage?.rust || 0, color: 'bg-orange-500' },
-  ]
+    { name: 'Python', coverage: metrics?.coverage?.python, color: 'bg-blue-500' },
+    { name: 'JavaScript', coverage: metrics?.coverage?.javascript, color: 'bg-yellow-500' },
+    { name: 'Rust', coverage: metrics?.coverage?.rust, color: 'bg-orange-500' },
+  ].filter(lang => lang.coverage != null) // Only show languages with data
 
   return (
     <div className="metric-card">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white">Code Coverage</h3>
         <div className="flex items-center gap-2">
-          <span className={`text-2xl font-bold ${getCoverageColor(coverage)}`}>
-            {coverage.toFixed(1)}%
-          </span>
-          {delta !== '0.0' && (
-            <span className={`text-sm ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {delta > 0 ? '+' : ''}{delta}%
-            </span>
+          {coverage != null ? (
+            <>
+              <span className={`text-2xl font-bold ${getCoverageColor(coverage)}`}>
+                {coverage.toFixed(1)}%
+              </span>
+              {delta != null && delta !== '0.0' && (
+                <span className={`text-sm ${Number(delta) > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {Number(delta) > 0 ? '+' : ''}{delta}%
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-2xl font-bold text-gray-400">-</span>
           )}
         </div>
       </div>
@@ -74,35 +97,44 @@ const CoverageCard = ({ metrics, history = [] }) => {
             <div className="flex justify-between mb-1">
               <span className="text-gray-400 text-sm">{lang.name}</span>
               <span className="text-white text-sm font-medium">
-                {lang.coverage.toFixed(1)}%
+                {lang.coverage != null ? `${lang.coverage.toFixed(1)}%` : '-'}
               </span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
               <div
                 className={`${lang.color} h-2 rounded-full transition-all duration-500`}
-                style={{ width: `${lang.coverage}%` }}
+                style={{ width: `${lang.coverage != null ? lang.coverage : 0}%` }}
               />
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-gray-400 text-xs">Lines</p>
-            <p className="text-white font-medium">85.2%</p>
-          </div>
-          <div>
-            <p className="text-gray-400 text-xs">Branches</p>
-            <p className="text-white font-medium">78.9%</p>
-          </div>
-          <div>
-            <p className="text-gray-400 text-xs">Functions</p>
-            <p className="text-white font-medium">91.3%</p>
+      {/* Removed hardcoded coverage details - only show if data available */}
+      {metrics?.coverage?.lines != null || metrics?.coverage?.branches != null || metrics?.coverage?.functions != null ? (
+        <div className="mt-4 pt-4 border-t border-gray-700">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {metrics?.coverage?.lines != null && (
+              <div>
+                <p className="text-gray-400 text-xs">Lines</p>
+                <p className="text-white font-medium">{metrics.coverage.lines.toFixed(1)}%</p>
+              </div>
+            )}
+            {metrics?.coverage?.branches != null && (
+              <div>
+                <p className="text-gray-400 text-xs">Branches</p>
+                <p className="text-white font-medium">{metrics.coverage.branches.toFixed(1)}%</p>
+              </div>
+            )}
+            {metrics?.coverage?.functions != null && (
+              <div>
+                <p className="text-gray-400 text-xs">Functions</p>
+                <p className="text-white font-medium">{metrics.coverage.functions.toFixed(1)}%</p>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      ) : null}
     </div>
   )
 }

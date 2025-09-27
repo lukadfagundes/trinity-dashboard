@@ -1,0 +1,23 @@
+{
+  "JavaScript": { "color": "bg-yellow-500", "hex": "#F59E0B" },
+  "TypeScript": { "color": "bg-blue-500", "hex": "#3B82F6" },
+  "Python": { "color": "bg-green-500", "hex": "#10B981" },
+  "Java": { "color": "bg-orange-500", "hex": "#F97316" },
+  "Go": { "color": "bg-cyan-500", "hex": "#06B6D4" },
+  "Rust": { "color": "bg-red-500", "hex": "#EF4444" },
+  "Ruby": { "color": "bg-pink-500", "hex": "#EC4899" },
+  "PHP": { "color": "bg-purple-500", "hex": "#A855F7" },
+  "CSS": { "color": "bg-indigo-500", "hex": "#6366F1" },
+  "HTML": { "color": "bg-red-400", "hex": "#F87171" },
+  "Shell": { "color": "bg-gray-500", "hex": "#6B7280" },
+  "C": { "color": "bg-gray-600", "hex": "#4B5563" },
+  "C++": { "color": "bg-blue-600", "hex": "#2563EB" },
+  "C#": { "color": "bg-purple-600", "hex": "#9333EA" },
+  "Swift": { "color": "bg-orange-400", "hex": "#FB923C" },
+  "Kotlin": { "color": "bg-purple-400", "hex": "#C084FC" },
+  "Scala": { "color": "bg-red-600", "hex": "#DC2626" },
+  "Vue": { "color": "bg-green-400", "hex": "#4ADE80" },
+  "Dart": { "color": "bg-blue-400", "hex": "#60A5FA" },
+  "Elixir": { "color": "bg-purple-700", "hex": "#6B21A8" },
+  "default": { "color": "bg-gray-400", "hex": "#9CA3AF" }
+}

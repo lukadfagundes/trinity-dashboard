@@ -1,3 +1,4 @@
+import config from '../services/config';
 import { useState, useEffect } from 'react';
 import { HistoryService } from '../services/historyService';
 
@@ -134,7 +135,7 @@ function ComparisonChart({ branches, metrics }) {
 // Main BranchComparison component
 export function BranchComparison({
   branches = ['main', 'dev'],
-  repository = 'trinity-dashboard'
+  repository = config.getRepo()
 }) {
   const [metrics, setMetrics] = useState({});
   const [loading, setLoading] = useState(true);

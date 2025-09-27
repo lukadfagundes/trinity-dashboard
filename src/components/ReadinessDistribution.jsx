@@ -1,3 +1,4 @@
+import { config } from '../services/config';
 import { useState, useEffect } from "react";
 import { HistoryService } from "../services/historyService";
 import { ReadinessScorer } from "../services/readinessScoring";
@@ -7,7 +8,7 @@ import { ReadinessScorer } from "../services/readinessScoring";
  * Shows distribution of PR readiness scores
  */
 
-export function ReadinessDistribution({ repository = "trinity-dashboard" }) {
+export function ReadinessDistribution({ repository = config.getRepo() }) {
   const [distribution, setDistribution] = useState(null);
   const [loading, setLoading] = useState(true);
   const [prCount, setPrCount] = useState(100);
@@ -42,11 +43,12 @@ export function ReadinessDistribution({ repository = "trinity-dashboard" }) {
         }));
 
         // Create distribution bins
+        const threshold = config.getReadinessThreshold();
         const bins = {
           "0-60": { count: 0, label: "0-60%", color: "bg-red-500" },
           "60-70": { count: 0, label: "60-70%", color: "bg-orange-500" },
-          "70-80": { count: 0, label: "70-80%", color: "bg-yellow-500" },
-          "80-90": { count: 0, label: "80-90%", color: "bg-lime-500" },
+          [`70-${threshold}`]: { count: 0, label: `70-${threshold}%`, color: "bg-yellow-500" },
+          [`${threshold}-90`]: { count: 0, label: `${threshold}-90%`, color: "bg-lime-500" },
           "90-100": { count: 0, label: "90-100%", color: "bg-green-500" },
         };
 
@@ -55,8 +57,8 @@ export function ReadinessDistribution({ repository = "trinity-dashboard" }) {
           const score = pr.readinessScore;
           if (score < 60) bins["0-60"].count++;
           else if (score < 70) bins["60-70"].count++;
-          else if (score < 80) bins["70-80"].count++;
-          else if (score < 90) bins["80-90"].count++;
+          else if (score < threshold) bins[`70-${threshold}`].count++;
+          else if (score < 90) bins[`${threshold}-90`].count++;
           else bins["90-100"].count++;
         });
 
@@ -94,8 +96,8 @@ export function ReadinessDistribution({ repository = "trinity-dashboard" }) {
 
     return {
       total: prs.length,
-      passing: scores.filter((s) => s >= 80).length,
-      failing: scores.filter((s) => s < 80).length,
+      passing: scores.filter((s) => s >= config.getReadinessThreshold()).length,
+      failing: scores.filter((s) => s < config.getReadinessThreshold()).length,
       average: scores.reduce((a, b) => a + b, 0) / scores.length,
       median: sortedScores[Math.floor(sortedScores.length / 2)],
     };
@@ -248,9 +250,9 @@ export function ReadinessDistribution({ repository = "trinity-dashboard" }) {
           )}
         </div>
         <div className="flex justify-between mt-1 text-xs text-gray-500">
-          <span>Passing (≥80%): {stats.passing}</span>
+          <span>Passing (≥{config.getReadinessThreshold()}%): {stats.passing}</span>
           <span>
-            Failing ({"<"}80%): {stats.failing}
+            Failing ({"<"}{config.getReadinessThreshold()}%): {stats.failing}
           </span>
         </div>
       </div>

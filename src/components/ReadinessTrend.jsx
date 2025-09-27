@@ -1,3 +1,4 @@
+import { config } from '../services/config';
 import { useState, useEffect } from 'react';
 import { HistoryService } from '../services/historyService';
 import { ReadinessScorer } from '../services/readinessScoring';
@@ -7,7 +8,7 @@ import { ReadinessScorer } from '../services/readinessScoring';
  * Shows PR readiness scores over time
  */
 
-export function ReadinessTrend({ repository = 'trinity-dashboard' }) {
+export function ReadinessTrend({ repository = config.getRepo() }) {
   const [trendData, setTrendData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(30); // days
@@ -281,12 +282,12 @@ function SimpleLineChart({ data }) {
         );
       })}
 
-      {/* Threshold line (80%) */}
+      {/* Threshold line */}
       <line
         x1={padding}
-        y1={height - padding - (80 / maxValue) * (height - 2 * padding)}
+        y1={height - padding - (config.getReadinessThreshold() / maxValue) * (height - 2 * padding)}
         x2={width - padding}
-        y2={height - padding - (80 / maxValue) * (height - 2 * padding)}
+        y2={height - padding - (config.getReadinessThreshold() / maxValue) * (height - 2 * padding)}
         stroke="rgb(239, 68, 68)"
         strokeWidth="0.5"
         strokeDasharray="2,2"

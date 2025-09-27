@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { Activity, Cpu, Database, AlertTriangle, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import DashboardLayout from './Layout/DashboardLayout';
 import performanceMetrics from '../utils/performanceMetrics';
 
 const PerformanceDashboard = () => {
@@ -317,7 +318,8 @@ const PerformanceDashboard = () => {
   };
 
   return (
-    <div className="p-6">
+    <DashboardLayout>
+      <div className="p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Performance Metrics</h2>
         <p className="text-gray-600 dark:text-gray-400">
@@ -409,7 +411,8 @@ const PerformanceDashboard = () => {
           Reset Metrics
         </button>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

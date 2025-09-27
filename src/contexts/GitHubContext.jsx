@@ -17,48 +17,19 @@ export function GitHubProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [rateLimitInfo, setRateLimitInfo] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isDemoMode, setDemoMode] = useState(false);
 
-  const loadSampleData = useCallback(async () => {
-    try {
-      const response = await fetch('/data/sample-runs.json');
-      const sampleData = await response.json();
-
-      const transformedData = [{
-        repo: sampleData.project,
-        runs: sampleData.runs,
-        stats: {
-          stars: 42,
-          forks: 8,
-          issues: 3,
-          branches: 5,
-          openPRs: 2,
-          language: 'JavaScript',
-          size: 1024,
-          updatedAt: new Date().toISOString()
-        },
-        metrics: {
-          coverage: sampleData.runs[0]?.metrics?.coverage || {},
-          tests: sampleData.runs[0]?.metrics?.tests || {},
-          security: sampleData.runs[0]?.metrics?.security || {},
-          build: { success: 8, failed: 2, total: 10 }
-        },
-        health: { score: 85, level: 'healthy', color: 'green' },
-        lastUpdate: new Date().toISOString()
-      }];
-
-      setData(transformedData);
-      setLastUpdate(new Date());
-      setError(null);
-    } catch (err) {
-      console.error('[GitHub Context] Failed to load sample data:', err);
-      setError('Failed to load sample data');
-    }
+  // Remove hardcoded sample data - just set demo mode
+  const handleDemoMode = useCallback(() => {
+    setDemoMode(true);
+    setData([]); // Empty data in demo mode
+    setError('Demo Mode - No GitHub Token configured');
+    setLoading(false);
   }, []);
 
   const fetchData = useCallback(async (forceRefresh = false) => {
     if (USE_SAMPLE_DATA) {
-      await loadSampleData();
-      setLoading(false);
+      handleDemoMode();
       return;
     }
 
@@ -150,7 +121,7 @@ export function GitHubProvider({ children }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [loadSampleData]);
+  }, [handleDemoMode]);
 
   const refresh = useCallback(() => {
     
@@ -213,6 +184,7 @@ export function GitHubProvider({ children }) {
     isAuthenticated,
     rateLimitInfo,
     refreshing,
+    isDemoMode,
     clearError,
     getCacheStats,
     clearCache
@@ -225,6 +197,7 @@ export function GitHubProvider({ children }) {
     isAuthenticated,
     rateLimitInfo,
     refreshing,
+    isDemoMode,
     clearError,
     getCacheStats,
     clearCache

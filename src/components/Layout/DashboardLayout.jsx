@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
 const DashboardLayout = ({ children }) => {
   const [lastUpdate, setLastUpdate] = useState(new Date())
@@ -22,15 +23,18 @@ const DashboardLayout = ({ children }) => {
                 </h1>
               </div>
               <div className="ml-10 flex items-baseline space-x-4">
-                <a href="/" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                <Link to="/" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Overview
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                </Link>
+                <Link to="/projects" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Projects
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                </Link>
+                <Link to="/analytics" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Analytics
-                </a>
+                </Link>
+                <Link to="/performance" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                  Performance
+                </Link>
               </div>
             </div>
             <div className="flex items-center">

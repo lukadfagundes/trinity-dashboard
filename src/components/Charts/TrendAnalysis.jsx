@@ -1,5 +1,6 @@
 import { Line } from 'react-chartjs-2';
 import { useState, useMemo } from 'react';
+import { config } from '../../services/config';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -67,12 +68,22 @@ export default function TrendAnalysis({ data }) {
     const branchRuns = runs.filter(run => run.branch === branch || !branch);
     const labels = generateTimeLabels(timeRange);
 
-    return labels.map(() => {
-      const value = Math.random() * 20 + 70;
-      return metricType === 'coverage' ? value :
-             metricType === 'tests' ? value + 10 :
-             metricType === 'build' ? value + 5 :
-             value - 10;
+    // Extract actual metric data from runs instead of generating fake data
+    return labels.map((label, index) => {
+      const runIndex = Math.min(index, branchRuns.length - 1);
+      if (runIndex < 0 || !branchRuns[runIndex]) return null;
+
+      const run = branchRuns[runIndex];
+      switch(metricType) {
+        case 'coverage':
+          return run.metrics?.coverage?.overall ?? null;
+        case 'tests':
+          return run.metrics?.tests?.passRate ?? null;
+        case 'build':
+          return run.metrics?.build?.success ? 100 : 0;
+        default:
+          return null;
+      }
     });
   };
 
@@ -241,7 +252,7 @@ export default function TrendAnalysis({ data }) {
         </div>
         <div className="bg-gray-800 dark:bg-gray-900 rounded p-2">
           <div className="text-xs text-gray-400">Target</div>
-          <div className="text-lg font-semibold text-trinity-green">80%</div>
+          <div className="text-lg font-semibold text-trinity-green">{config.getReadinessThreshold()}%</div>
         </div>
       </div>
     </div>

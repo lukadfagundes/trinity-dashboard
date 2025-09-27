@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useGitHub } from '../contexts/GitHubContext'
+import { config } from '../services/config'
 import DashboardLayout from '../components/Layout/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorDisplay from '../components/ErrorDisplay'
@@ -52,9 +53,9 @@ const Dashboard = () => {
         <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">Trinity DevOps Dashboard</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">{config.getAppTitle()}</h2>
               <p className="text-gray-400">
-                Real-time monitoring and analytics for Trinity Method projects
+                {config.getAppDescription()}
               </p>
             </div>
 
@@ -161,6 +162,12 @@ const Dashboard = () => {
                   <span className="text-white font-medium">{data?.length || 0}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-gray-400">With Workflows</span>
+                  <span className="text-white font-medium">
+                    {data?.filter(repo => repo.metrics?.hasWorkflowData).length || 0}/{data?.length || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-gray-400">Total Runs</span>
                   <span className="text-white font-medium">
                     {data?.reduce((sum, repo) => sum + (repo.runs?.length || 0), 0) || 0}
@@ -236,7 +243,7 @@ const Dashboard = () => {
                   Manage GitHub Tokens →
                 </a>
                 <a
-                  href="https://github.com/trinity-method/trinity-dashboard"
+                  href={config.getRepoUrl()}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-trinity-blue hover:text-trinity-green transition-colors"

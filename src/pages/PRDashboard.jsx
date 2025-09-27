@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { HistoryService } from '../services/historyService';
 import { ReadinessScorer } from '../services/readinessScoring';
+import { config } from '../services/config';
 import DashboardLayout from '../components/Layout/DashboardLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -68,12 +69,12 @@ function ReadinessScore({ score }) {
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-400">Threshold</span>
-          <span className="text-white">80%</span>
+          <span className="text-white">{config.getReadinessThreshold()}%</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-400">Status</span>
-          <span className={score >= 80 ? 'text-green-400' : 'text-red-400'}>
-            {score >= 80 ? 'Ready to Merge' : 'Not Ready'}
+          <span className={score >= config.getReadinessThreshold() ? 'text-green-400' : 'text-red-400'}>
+            {score >= config.getReadinessThreshold() ? 'Ready to Merge' : 'Not Ready'}
           </span>
         </div>
       </div>

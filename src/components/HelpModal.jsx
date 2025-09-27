@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { getKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { config } from '../services/config';
 
 export default function HelpModal({ isOpen, onClose }) {
   useEffect(() => {
@@ -22,7 +23,7 @@ export default function HelpModal({ isOpen, onClose }) {
     {
       name: 'Coverage',
       description: 'Percentage of code covered by automated tests. Higher values indicate better test coverage.',
-      target: '80% or higher',
+      target: `${config.getReadinessThreshold()}% or higher`,
       color: 'text-green-500'
     },
     {

@@ -48,13 +48,17 @@ const ProjectSection = ({ data }) => {
             {repo}
           </h2>
           <span className={`text-2xl ${getHealthColor()}`}>{getHealthIcon()}</span>
-          {health && (
+          {health && health.score != null ? (
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               health.level === 'healthy' ? 'bg-green-900/50 text-green-400' :
               health.level === 'warning' ? 'bg-yellow-900/50 text-yellow-400' :
               'bg-red-900/50 text-red-400'
             }`}>
               {health.score}% Health
+            </span>
+          ) : health === null && (
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-900/50 text-gray-400">
+              No Data
             </span>
           )}
         </div>
@@ -110,7 +114,25 @@ const ProjectSection = ({ data }) => {
 
       {expanded && !error && (
         <div className="space-y-6 animate-fadeIn">
-          {metrics && (
+          {metrics?.hasWorkflowData === false ? (
+            <div className="bg-gray-900/50 rounded-lg p-8 text-center border border-gray-700">
+              <div className="text-4xl mb-4">🔄</div>
+              <h3 className="text-xl font-semibold text-white mb-2">No GitHub Actions Configured</h3>
+              <p className="text-gray-400 mb-4">
+                Set up CI/CD workflows to see build, test, and deployment metrics
+              </p>
+              {stats?.html_url && (
+                <a
+                  href={`${stats.html_url}/actions/new`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block px-4 py-2 bg-trinity-blue text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Configure Workflows →
+                </a>
+              )}
+            </div>
+          ) : metrics && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <HealthCard project={repo} metrics={metrics} />
               <TestResultsCard metrics={metrics} />
@@ -159,7 +181,9 @@ const ProjectSection = ({ data }) => {
                         </div>
                         <div className="text-right">
                           <p className="text-gray-300 text-sm">
-                            {run.metrics?.coverage?.overall?.toFixed(1) || 0}% coverage
+                            {run.metrics?.coverage?.overall != null
+                              ? `${run.metrics.coverage.overall.toFixed(1)}% coverage`
+                              : 'No coverage data'}
                           </p>
                           <p className="text-gray-500 text-xs">
                             {new Date(run.timestamp).toLocaleTimeString()}

@@ -1,3 +1,4 @@
+import { config } from '../services/config';
 import { useState, useEffect, useMemo } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { HistoryService } from '../services/historyService';
@@ -6,7 +7,7 @@ import { HistoryService } from '../services/historyService';
  * Branch Analytics Component
  * Provides detailed analytics and comparisons between branches
  */
-export function BranchAnalytics({ repository = 'trinity-dashboard' }) {
+export function BranchAnalytics({ repository = config.getRepo() }) {
   const [branches, setBranches] = useState(['main', 'dev', 'develop']);
   const [selectedBranches, setSelectedBranches] = useState(['main', 'dev']);
   const [history, setHistory] = useState([]);
@@ -124,21 +125,42 @@ export function BranchAnalytics({ repository = 'trinity-dashboard' }) {
     selectedBranches.forEach(branch => {
       const branchData = history.filter(entry => entry.branch === branch);
 
-      const ranges = {
-        '0-20%': 0,
-        '20-40%': 0,
-        '40-60%': 0,
-        '60-80%': 0,
-        '80-100%': 0
-      };
+      const threshold = config.getReadinessThreshold();
+      const ranges = {};
+
+      // Dynamic ranges based on threshold
+      if (threshold === 80) {
+        ranges['0-20%'] = 0;
+        ranges['20-40%'] = 0;
+        ranges['40-60%'] = 0;
+        ranges['60-80%'] = 0;
+        ranges['80-100%'] = 0;
+      } else {
+        // Adjust ranges based on custom threshold
+        const step = threshold / 4;
+        ranges[`0-${step}%`] = 0;
+        ranges[`${step}-${step*2}%`] = 0;
+        ranges[`${step*2}-${step*3}%`] = 0;
+        ranges[`${step*3}-${threshold}%`] = 0;
+        ranges[`${threshold}-100%`] = 0;
+      }
 
       branchData.forEach(entry => {
         const coverage = entry.coverage?.overall || 0;
-        if (coverage <= 20) ranges['0-20%']++;
-        else if (coverage <= 40) ranges['20-40%']++;
-        else if (coverage <= 60) ranges['40-60%']++;
-        else if (coverage <= 80) ranges['60-80%']++;
-        else ranges['80-100%']++;
+        if (threshold === 80) {
+          if (coverage <= 20) ranges['0-20%']++;
+          else if (coverage <= 40) ranges['20-40%']++;
+          else if (coverage <= 60) ranges['40-60%']++;
+          else if (coverage <= 80) ranges['60-80%']++;
+          else ranges['80-100%']++;
+        } else {
+          const step = threshold / 4;
+          if (coverage <= step) ranges[`0-${step}%`]++;
+          else if (coverage <= step*2) ranges[`${step}-${step*2}%`]++;
+          else if (coverage <= step*3) ranges[`${step*2}-${step*3}%`]++;
+          else if (coverage <= threshold) ranges[`${step*3}-${threshold}%`]++;
+          else ranges[`${threshold}-100%`]++;
+        }
       });
 
       distributions[branch] = ranges;

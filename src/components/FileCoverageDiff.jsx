@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { config } from '../services/config';
 
 /**
  * File Coverage Diff Component
@@ -247,7 +248,7 @@ export function FileCoverageDiff({ prNumber, prCoverage, mainCoverage }) {
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
             <div className="w-3 h-3 bg-green-500 rounded mr-1"></div>
-            <span>≥80% Coverage</span>
+            <span>≥{config.getReadinessThreshold()}% Coverage</span>
           </div>
           <div className="flex items-center">
             <div className="w-3 h-3 bg-yellow-500 rounded mr-1"></div>
